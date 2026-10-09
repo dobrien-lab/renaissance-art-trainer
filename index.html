@@ -1,0 +1,837 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Renaissance Art Trainer</title>
+  <style>
+    :root {
+      --ink: #1e2320;
+      --muted: #66706a;
+      --paper: #fbf8ef;
+      --panel: #ffffff;
+      --line: #ddd5c1;
+      --blue: #174a7c;
+      --blue-soft: #e8f1f8;
+      --gold: #b7832f;
+      --green: #2f6b58;
+      --wrong: #9c3f34;
+      --right: #28734f;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      color: var(--ink);
+      background:
+        linear-gradient(135deg, rgba(23,74,124,.08), transparent 38%),
+        linear-gradient(315deg, rgba(183,131,47,.12), transparent 42%),
+        var(--paper);
+    }
+
+    header {
+      padding: 22px clamp(16px, 4vw, 44px) 12px;
+      border-bottom: 1px solid var(--line);
+      background: rgba(251,248,239,.9);
+      position: sticky;
+      top: 0;
+      z-index: 10;
+      backdrop-filter: blur(12px);
+    }
+
+    .topbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      max-width: 1180px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.6rem, 3vw, 2.35rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 8px 0 0;
+      color: var(--muted);
+      max-width: 780px;
+      font-size: .98rem;
+    }
+
+    .score {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(72px, 1fr));
+      gap: 8px;
+      min-width: 270px;
+    }
+
+    .stat {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 9px 10px;
+      background: var(--panel);
+      text-align: center;
+    }
+
+    .stat strong {
+      display: block;
+      font-size: 1.2rem;
+      color: var(--blue);
+    }
+
+    .stat span {
+      font-size: .72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    main {
+      max-width: 1180px;
+      margin: 0 auto;
+      padding: 18px clamp(16px, 4vw, 44px) 42px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+    }
+
+    button, select {
+      appearance: none;
+      border: 1px solid var(--line);
+      background: var(--panel);
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 10px 13px;
+      font: inherit;
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 650;
+      transition: transform .12s ease, box-shadow .12s ease, border-color .12s ease;
+    }
+
+    button:hover { transform: translateY(-1px); box-shadow: 0 6px 18px rgba(33,31,24,.08); }
+    button:focus-visible, select:focus-visible { outline: 3px solid rgba(23,74,124,.28); outline-offset: 2px; }
+
+    .primary { background: var(--blue); color: white; border-color: var(--blue); }
+    .ghost { background: transparent; }
+
+    .tabs {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 0 0 18px;
+    }
+
+    .tab {
+      background: rgba(255,255,255,.68);
+      color: var(--muted);
+      border-color: transparent;
+    }
+
+    .tab.active {
+      background: var(--blue);
+      color: white;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .trainer-grid {
+      display: grid;
+      grid-template-columns: minmax(280px, 1.1fr) minmax(280px, .9fr);
+      gap: 18px;
+      align-items: stretch;
+    }
+
+    .viewer, .side-panel, .list-panel {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.82);
+      box-shadow: 0 12px 32px rgba(55,43,20,.08);
+    }
+
+    .viewer { overflow: hidden; }
+
+    .art-frame {
+      min-height: 480px;
+      display: grid;
+      place-items: center;
+      background: #ede6d6;
+      border-bottom: 1px solid var(--line);
+      position: relative;
+    }
+
+    .art-frame img {
+      width: 100%;
+      height: 100%;
+      max-height: 62vh;
+      object-fit: contain;
+      display: block;
+      background: #efe9dc;
+    }
+
+    .badge {
+      position: absolute;
+      left: 14px;
+      top: 14px;
+      border-radius: 999px;
+      background: rgba(30,35,32,.82);
+      color: white;
+      padding: 7px 10px;
+      font-size: .78rem;
+      font-weight: 700;
+    }
+
+    .caption {
+      padding: 16px;
+      display: grid;
+      gap: 6px;
+    }
+
+    .caption h2 {
+      margin: 0;
+      font-size: 1.4rem;
+    }
+
+    .caption p { margin: 0; color: var(--muted); line-height: 1.4; }
+
+    .side-panel { padding: 16px; }
+
+    .prompt {
+      margin: 0 0 12px;
+      font-size: 1.15rem;
+      font-weight: 750;
+    }
+
+    .choices {
+      display: grid;
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .choice {
+      text-align: left;
+      padding: 13px;
+      border-width: 2px;
+      background: white;
+    }
+
+    .choice.correct { border-color: var(--right); background: #edf8f1; }
+    .choice.wrong { border-color: var(--wrong); background: #fff0ee; }
+
+    .feedback {
+      margin-top: 14px;
+      padding: 13px;
+      border-radius: 8px;
+      border: 1px solid var(--line);
+      background: var(--blue-soft);
+      min-height: 72px;
+      line-height: 1.42;
+    }
+
+    .revealed {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-top: 12px;
+    }
+
+    .fact {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: white;
+    }
+
+    .fact span {
+      display: block;
+      color: var(--muted);
+      font-size: .75rem;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    .fact strong { display: block; margin-top: 3px; }
+
+    .matching {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(280px, 1fr));
+      gap: 18px;
+    }
+
+    .match-card {
+      display: grid;
+      grid-template-columns: 112px 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 12px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .match-card:last-child { border-bottom: 0; }
+
+    .thumb {
+      width: 112px;
+      aspect-ratio: 1 / 1;
+      border-radius: 8px;
+      object-fit: cover;
+      background: #ece4d2;
+    }
+
+    .match-card h3 { margin: 0 0 6px; font-size: 1rem; }
+
+    .match-card select { width: 100%; }
+
+    .result-pill {
+      display: inline-flex;
+      margin-top: 7px;
+      border-radius: 999px;
+      padding: 4px 9px;
+      font-size: .78rem;
+      font-weight: 700;
+      color: white;
+      background: var(--muted);
+    }
+
+    .result-pill.right { background: var(--right); }
+    .result-pill.wrong { background: var(--wrong); }
+
+    .timeline {
+      display: grid;
+      gap: 12px;
+    }
+
+    .era {
+      display: grid;
+      grid-template-columns: 140px 1fr;
+      gap: 12px;
+      padding: 14px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: rgba(255,255,255,.84);
+    }
+
+    .era strong { color: var(--blue); }
+    .era ul { margin: 0; padding-left: 18px; line-height: 1.5; }
+
+    .gallery {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 14px;
+    }
+
+    .gallery-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: var(--panel);
+    }
+
+    .gallery-card img {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      display: block;
+      background: #eee6d6;
+    }
+
+    .gallery-card div { padding: 12px; }
+    .gallery-card h3 { margin: 0 0 5px; font-size: 1rem; }
+    .gallery-card p { margin: 0; color: var(--muted); font-size: .9rem; line-height: 1.35; }
+
+    .teacher-note {
+      margin-top: 18px;
+      color: var(--muted);
+      font-size: .88rem;
+      line-height: 1.45;
+    }
+
+    @media (max-width: 820px) {
+      header { position: static; }
+      .trainer-grid, .matching { grid-template-columns: 1fr; }
+      .art-frame { min-height: 330px; }
+      .score { width: 100%; min-width: 0; }
+      .revealed { grid-template-columns: 1fr; }
+      .era { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="topbar">
+      <div>
+        <h1>Renaissance Art Trainer</h1>
+        <p class="subtitle">Practice the works, artists, cities, and themes from Unit 2: Florence to Rome to Venice.</p>
+      </div>
+      <div class="score" aria-label="scoreboard">
+        <div class="stat"><strong id="correctCount">0</strong><span>Correct</span></div>
+        <div class="stat"><strong id="streakCount">0</strong><span>Streak</span></div>
+        <div class="stat"><strong id="seenCount">0</strong><span>Seen</span></div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="controls">
+      <button class="primary" id="newQuestion">New Question</button>
+      <button id="revealAnswer">Reveal</button>
+      <button class="ghost" id="resetScore">Reset Score</button>
+      <select id="questionType" aria-label="question type">
+        <option value="mixed">Mixed Practice</option>
+        <option value="work">Name the Work</option>
+        <option value="artist">Name the Artist</option>
+        <option value="city">City or Center</option>
+        <option value="theme">Key Theme</option>
+      </select>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-screen="quiz">Image Quiz</button>
+      <button class="tab" data-screen="match">City Match</button>
+      <button class="tab" data-screen="ladder">Renaissance Ladder</button>
+      <button class="tab" data-screen="gallery">Study Gallery</button>
+    </div>
+
+    <section class="screen active" id="quiz">
+      <div class="trainer-grid">
+        <article class="viewer">
+          <div class="art-frame">
+            <span class="badge" id="eraBadge">High Renaissance</span>
+            <img id="artImage" alt="Renaissance artwork">
+          </div>
+          <div class="caption">
+            <h2 id="maskedTitle">Look closely...</h2>
+            <p id="maskedHint">Use the visual clues before you answer.</p>
+          </div>
+        </article>
+
+        <aside class="side-panel">
+          <p class="prompt" id="promptText">Which work is this?</p>
+          <div class="choices" id="choices"></div>
+          <div class="feedback" id="feedback">Choose an answer to begin. The app will track correct answers, streak, and total images seen.</div>
+          <div class="revealed" id="revealedFacts" hidden></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="screen" id="match">
+      <div class="controls">
+        <button class="primary" id="checkMatches">Check City Matches</button>
+        <button id="resetMatches">Clear</button>
+      </div>
+      <div class="matching">
+        <div class="list-panel" id="matchList"></div>
+        <div class="side-panel">
+          <p class="prompt">City Centers To Know</p>
+          <div class="revealed">
+            <div class="fact"><span>Florence</span><strong>Early Renaissance, Medici, Giotto, Masaccio, Donatello, Botticelli, Michelangelo's David.</strong></div>
+            <div class="fact"><span>Rome / Vatican</span><strong>High Renaissance papal patronage: Sistine Chapel, Pieta, St. Peter's, Raphael rooms.</strong></div>
+            <div class="fact"><span>Venice</span><strong>Color, drama, atmosphere, merchant wealth: Giorgione and Veronese.</strong></div>
+            <div class="fact"><span>Milan</span><strong>Leonardo's Last Supper in Santa Maria delle Grazie.</strong></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="ladder">
+      <div class="timeline">
+        <div class="era">
+          <strong>Florence<br>Early Renaissance</strong>
+          <ul>
+            <li>Giotto breaks from flat medieval style with emotion, weight, and human grief.</li>
+            <li>Masaccio adds mathematical perspective and depth in <em>The Holy Trinity</em>.</li>
+            <li>Donatello revives classical free-standing sculpture with <em>David</em>.</li>
+          </ul>
+        </div>
+        <div class="era">
+          <strong>Florence to Rome<br>High Renaissance</strong>
+          <ul>
+            <li>Leonardo blends observation, anatomy, perspective, and psychology.</li>
+            <li>Michelangelo emphasizes the heroic human body in sculpture and fresco.</li>
+            <li>Raphael creates calm, balanced Madonnas and classical scenes.</li>
+          </ul>
+        </div>
+        <div class="era">
+          <strong>Venice<br>Later Renaissance</strong>
+          <ul>
+            <li>After Rome's decline, Venice becomes a major artistic center.</li>
+            <li>Venetian art favors color, atmosphere, elaborate settings, and drama.</li>
+            <li>Giorgione's <em>The Tempest</em> and Veronese's <em>Feast in the House of Levi</em> show the shift.</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section class="screen" id="gallery">
+      <div class="gallery" id="galleryList"></div>
+      <p class="teacher-note">Images are loaded from Wikimedia Commons file paths or public museum/public-domain reproductions where available. The study emphasis follows your supplied Unit 2 texts: art as a shift toward realism, humanism, perspective, individual achievement, patronage, and the movement from Florence to Rome to Venice.</p>
+    </section>
+  </main>
+
+  <script>
+    const works = [
+      {
+        title: "Lamentation Over the Dead Christ",
+        artist: "Giotto",
+        date: "c. 1305",
+        city: "Padua / Florence tradition",
+        center: "Florence",
+        era: "Early Renaissance",
+        theme: "Human emotion and realism",
+        clue: "A mournful crowd surrounds Christ; figures have weight, grief, and human feeling.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Giotto%20-%20Scrovegni%20-%20-36-%20-%20Lamentation%20%28The%20Mourning%20of%20Christ%29%20adj.jpg"
+      },
+      {
+        title: "The Holy Trinity",
+        artist: "Masaccio",
+        date: "c. 1425-1427",
+        city: "Florence",
+        center: "Florence",
+        era: "Early Renaissance",
+        theme: "Linear perspective",
+        clue: "Architecture seems to recede into the wall; a skeleton below reminds viewers of death.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Masaccio%20-%20Trinity%20-%20WGA14208.jpg"
+      },
+      {
+        title: "David",
+        artist: "Donatello",
+        date: "c. 1440s",
+        city: "Florence",
+        center: "Florence",
+        era: "Early Renaissance",
+        theme: "Revival of classical free-standing sculpture",
+        clue: "A youthful biblical hero stands in a relaxed classical pose.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Bronze%20David%20by%20Donatello-Bargello.jpg"
+      },
+      {
+        title: "The Birth of Venus",
+        artist: "Sandro Botticelli",
+        date: "c. 1485",
+        city: "Florence",
+        center: "Florence",
+        era: "Early Renaissance",
+        theme: "Classical mythology and beauty",
+        clue: "A goddess stands on a shell, showing renewed interest in Greek and Roman themes.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Botticelli%20Venus.jpg"
+      },
+      {
+        title: "Vitruvian Man",
+        artist: "Leonardo da Vinci",
+        date: "c. 1490",
+        city: "Milan / Venice collection",
+        center: "Milan",
+        era: "High Renaissance",
+        theme: "Humanism, anatomy, proportion",
+        clue: "A human figure fits inside a circle and square: art, math, and the body together.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Vitruvian.jpg"
+      },
+      {
+        title: "Mona Lisa",
+        artist: "Leonardo da Vinci",
+        date: "c. 1503-1506",
+        city: "Florence / France",
+        center: "Florence",
+        era: "High Renaissance",
+        theme: "Portrait realism and psychology",
+        clue: "A seated woman with a famous subtle smile and atmospheric background.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Mona%20Lisa.jpg"
+      },
+      {
+        title: "The Last Supper",
+        artist: "Leonardo da Vinci",
+        date: "1495-1498",
+        city: "Milan",
+        center: "Milan",
+        era: "High Renaissance",
+        theme: "Perspective and individual expression",
+        clue: "Christ sits at the center as the disciples react with different emotions.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Leonardo%20da%20Vinci%20-%20The%20Last%20Supper%20high%20res.jpg"
+      },
+      {
+        title: "David",
+        artist: "Michelangelo",
+        date: "1501-1504",
+        city: "Florence",
+        center: "Florence",
+        era: "High Renaissance",
+        theme: "Heroic human body",
+        clue: "A monumental marble hero stands alert before battle.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Michelangelos%20David.jpg"
+      },
+      {
+        title: "Pieta",
+        artist: "Michelangelo",
+        date: "1498-1499",
+        city: "Rome / Vatican",
+        center: "Rome",
+        era: "High Renaissance",
+        theme: "Ideal beauty and religious emotion",
+        clue: "Mary holds the dead Christ in a polished marble sculpture.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Michelangelo%27s%20Pieta%205450.jpg"
+      },
+      {
+        title: "Creation of Adam",
+        artist: "Michelangelo",
+        date: "c. 1511-1512",
+        city: "Rome / Vatican",
+        center: "Rome",
+        era: "High Renaissance",
+        theme: "Human body, biblical drama, papal patronage",
+        clue: "Two hands almost touch on the Sistine Chapel ceiling.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/The%20Creation%20of%20Adam.jpg"
+      },
+      {
+        title: "Madonna of the Chair",
+        artist: "Raphael",
+        date: "c. 1513-1514",
+        city: "Rome / Florence collection",
+        center: "Rome",
+        era: "High Renaissance",
+        theme: "Calm balance and tender Madonna",
+        clue: "Mary and child appear gentle, rounded, and balanced inside a circular composition.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Raffael-madonna-sedia.jpg"
+      },
+      {
+        title: "The School of Athens",
+        artist: "Raphael",
+        date: "1509-1511",
+        city: "Rome / Vatican",
+        center: "Rome",
+        era: "High Renaissance",
+        theme: "Classical learning and Renaissance humanism",
+        clue: "Ancient philosophers gather in a grand classical building.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Raphael%20School%20of%20Athens.jpg"
+      },
+      {
+        title: "The Tempest",
+        artist: "Giorgione",
+        date: "c. 1506-1508",
+        city: "Venice",
+        center: "Venice",
+        era: "Venetian Renaissance",
+        theme: "Color, atmosphere, mystery",
+        clue: "A stormy landscape with a soldier, woman, infant, and uncertain story.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Giorgione%2C%20The%20tempest.jpg"
+      },
+      {
+        title: "Feast in the House of Levi",
+        artist: "Paolo Veronese",
+        date: "1573",
+        city: "Venice",
+        center: "Venice",
+        era: "Venetian Renaissance",
+        theme: "Venetian color, complex setting, Church censorship",
+        clue: "A huge banquet scene originally titled The Last Supper, later renamed after an inquiry.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/The%20Feast%20in%20the%20House%20of%20Levi%20%28edited%29.jpg"
+      },
+      {
+        title: "St. Peter's Basilica",
+        artist: "Bramante / Michelangelo and others",
+        date: "1506-1626",
+        city: "Rome / Vatican",
+        center: "Rome",
+        era: "High Renaissance",
+        theme: "Papal patronage and Renaissance architecture",
+        clue: "A massive church project tied to Renaissance popes and Michelangelo's dome.",
+        source: "Wikimedia Commons",
+        image: "https://commons.wikimedia.org/wiki/Special:FilePath/Saint%20Peter%27s%20Basilica%20facade%2C%20Rome%2C%20Italy.jpg"
+      }
+    ];
+
+    const prompts = {
+      work: { label: "Which work is this?", key: "title" },
+      artist: { label: "Who created this?", key: "artist" },
+      city: { label: "Which Renaissance center should you connect this with?", key: "center" },
+      theme: { label: "What key Renaissance idea does this best show?", key: "theme" }
+    };
+
+    let current = works[0];
+    let currentMode = "work";
+    let answered = false;
+    const score = { correct: 0, streak: 0, seen: 0 };
+
+    const $ = (id) => document.getElementById(id);
+    const shuffle = (items) => [...items].sort(() => Math.random() - 0.5);
+    const unique = (items) => [...new Set(items)];
+
+    function updateScore() {
+      $("correctCount").textContent = score.correct;
+      $("streakCount").textContent = score.streak;
+      $("seenCount").textContent = score.seen;
+    }
+
+    function pickMode() {
+      const selected = $("questionType").value;
+      if (selected !== "mixed") return selected;
+      return shuffle(["work", "artist", "city", "theme"])[0];
+    }
+
+    function makeChoices(work, mode) {
+      const key = prompts[mode].key;
+      const pool = unique(works.map(item => item[key])).filter(value => value !== work[key]);
+      return shuffle([work[key], ...shuffle(pool).slice(0, 3)]);
+    }
+
+    function renderQuestion() {
+      current = shuffle(works)[0];
+      currentMode = pickMode();
+      answered = false;
+      score.seen += 1;
+      updateScore();
+
+      $("artImage").src = current.image;
+      $("artImage").alt = "Image for a Renaissance artwork question";
+      $("eraBadge").textContent = current.era;
+      $("maskedTitle").textContent = "Look closely...";
+      $("maskedHint").textContent = current.clue;
+      $("promptText").textContent = prompts[currentMode].label;
+      $("feedback").textContent = "Choose the best answer. Then reveal the full card to lock it in.";
+      $("revealedFacts").hidden = true;
+      $("revealedFacts").innerHTML = "";
+
+      const choices = makeChoices(current, currentMode);
+      $("choices").innerHTML = "";
+      choices.forEach(choice => {
+        const btn = document.createElement("button");
+        btn.className = "choice";
+        btn.textContent = choice;
+        btn.addEventListener("click", () => answer(choice, btn));
+        $("choices").appendChild(btn);
+      });
+    }
+
+    function answer(choice, button) {
+      if (answered) return;
+      answered = true;
+      const right = current[prompts[currentMode].key];
+      const isRight = choice === right;
+      button.classList.add(isRight ? "correct" : "wrong");
+      [...document.querySelectorAll(".choice")].forEach(btn => {
+        if (btn.textContent === right) btn.classList.add("correct");
+        btn.disabled = true;
+      });
+      if (isRight) {
+        score.correct += 1;
+        score.streak += 1;
+        $("feedback").textContent = "Correct. " + current.clue;
+      } else {
+        score.streak = 0;
+        $("feedback").textContent = "Not quite. Correct answer: " + right + ". " + current.clue;
+      }
+      updateScore();
+      reveal();
+    }
+
+    function reveal() {
+      $("maskedTitle").textContent = current.title;
+      $("maskedHint").textContent = `${current.artist}. ${current.date}. ${current.city}. ${current.theme}.`;
+      $("revealedFacts").hidden = false;
+      $("revealedFacts").innerHTML = `
+        <div class="fact"><span>Work</span><strong>${current.title}</strong></div>
+        <div class="fact"><span>Artist</span><strong>${current.artist}</strong></div>
+        <div class="fact"><span>Date</span><strong>${current.date}</strong></div>
+        <div class="fact"><span>City</span><strong>${current.city}</strong></div>
+        <div class="fact"><span>Theme</span><strong>${current.theme}</strong></div>
+      `;
+    }
+
+    function buildMatches() {
+      const cityOptions = unique(works.map(work => work.center)).sort();
+      $("matchList").innerHTML = "";
+      shuffle(works).forEach((work, index) => {
+        const card = document.createElement("div");
+        card.className = "match-card";
+        card.innerHTML = `
+          <img class="thumb" src="${work.image}" alt="">
+          <div>
+            <h3>${work.title}</h3>
+            <p style="margin:0 0 8px;color:var(--muted);font-size:.88rem;">${work.artist} · ${work.date}</p>
+            <select aria-label="city for ${work.title}" data-answer="${work.center}" data-match="${index}">
+              <option value="">Choose city center...</option>
+              ${cityOptions.map(city => `<option value="${city}">${city}</option>`).join("")}
+            </select>
+            <span class="result-pill" data-result="${index}">Unchecked</span>
+          </div>
+        `;
+        $("matchList").appendChild(card);
+      });
+    }
+
+    function checkMatches() {
+      document.querySelectorAll("[data-match]").forEach(select => {
+        const pill = document.querySelector(`[data-result="${select.dataset.match}"]`);
+        const ok = select.value === select.dataset.answer;
+        pill.className = "result-pill " + (ok ? "right" : "wrong");
+        pill.textContent = ok ? "Correct" : `Answer: ${select.dataset.answer}`;
+      });
+    }
+
+    function buildGallery() {
+      $("galleryList").innerHTML = works.map(work => `
+        <article class="gallery-card">
+          <img src="${work.image}" alt="${work.title}">
+          <div>
+            <h3>${work.title}</h3>
+            <p><strong>${work.artist}</strong> · ${work.date} · ${work.city}</p>
+            <p>${work.theme}</p>
+          </div>
+        </article>
+      `).join("");
+    }
+
+    document.querySelectorAll(".tab").forEach(tab => {
+      tab.addEventListener("click", () => {
+        document.querySelectorAll(".tab").forEach(item => item.classList.remove("active"));
+        document.querySelectorAll(".screen").forEach(item => item.classList.remove("active"));
+        tab.classList.add("active");
+        $(tab.dataset.screen).classList.add("active");
+      });
+    });
+
+    $("newQuestion").addEventListener("click", renderQuestion);
+    $("revealAnswer").addEventListener("click", reveal);
+    $("resetScore").addEventListener("click", () => {
+      score.correct = 0;
+      score.streak = 0;
+      score.seen = 0;
+      updateScore();
+      renderQuestion();
+    });
+    $("questionType").addEventListener("change", renderQuestion);
+    $("checkMatches").addEventListener("click", checkMatches);
+    $("resetMatches").addEventListener("click", buildMatches);
+
+    buildMatches();
+    buildGallery();
+    renderQuestion();
+  </script>
+</body>
+</html>
